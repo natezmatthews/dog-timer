@@ -1,0 +1,17 @@
+{
+    "expo": {
+     "name": "Dog Timer",
+     "icon": "./path/to/your/app-icon.png",
+     "version": "1.0.0",
+     "slug": "dog-timer",
+     "ios": {
+       "bundleIdentifier": "com.ethaniel.dogtimer",
+       "buildNumber": "1.0.0"
+     },
+     "android": {
+       "package": "com.ethaniel.dogtimer",
+       "versionCode": 1
+     }
+    }
+  }
+ 

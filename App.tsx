@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Provider, useDispatch, useSelector } from 'react-redux';
 import { RootState, store } from './redux/redux';
 import { setFloor, setLowBound, setNoise, setNumRounds, setPb } from './redux/settingsSlice';
+import useTimer from './useTimer/useTimer';
 
 const Stack = createNativeStackNavigator();
 
@@ -78,8 +79,33 @@ function Home({ navigation }) {
   const [volley, setVolley] = useState<number>(0);
   const [plan, setPlan] = useState<number[]>([]);
   const [index, setIndex] = useState<number>(0);
-  const [seconds, setSeconds] = useState<number>(10);
   const dispatch = useDispatch()
+
+  function nSecondsFromNow(n: number): Date {
+    const time = new Date();
+    time.setSeconds(time.getSeconds() + n);
+    return time;
+  }
+
+  const {
+    seconds,
+    isRunning,
+    pause,
+    resume,
+    restart,
+  } = useTimer({ expiryTimestamp: nSecondsFromNow(10), onExpire: () => {
+    if (index + 1 === plan.length) {
+      dispatch(setPb((
+        parseInt(pb, 10) * 1.2).toString()))
+      setVolley(volley => volley + 1)
+    } else {
+      setIndex(index => {
+        const nextIndex = index + 1;
+        restart(nSecondsFromNow(Math.ceil(plan[nextIndex])))
+        return nextIndex
+      })
+    }
+  } });
 
   useEffect(() => {
     setPlan(() => {
@@ -91,32 +117,10 @@ function Home({ navigation }) {
         parseInt(floor, 10)
       );
       setIndex(0)
-      setSeconds(Math.ceil(newPlan[0]))
+      restart(nSecondsFromNow(Math.ceil(newPlan[0])))
       return newPlan;
     });
   }, [pb, numRounds, volley])
-
-  useEffect(() => {
-    let myTimeout = setTimeout(() => {
-      if (seconds > 0) {
-        setSeconds(seconds => seconds - 1)
-      }
-      if (seconds === 0) {
-        if (index + 1 === plan.length) {
-          dispatch(setPb((
-            parseInt(pb, 10) * 1.2).toString()))
-          setVolley(volley => volley + 1)
-        } else {
-          setIndex(index => {
-            const nextIndex = index + 1;
-            setSeconds(Math.ceil(plan[nextIndex]))
-            return nextIndex
-          })
-        }
-      }
-    }, 1000)
-    return () => clearTimeout(myTimeout)
-  }, [seconds]);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -132,7 +136,9 @@ function Home({ navigation }) {
         onPress={() => navigation.navigate('Settings')}
       />
       <Text style={styles.countdown}>{seconds}</Text>
-      <Button title={"Start"} onPress={() => setVolley(volley => volley + 1)} />
+      <Button title={ isRunning ? "Pause" : "Resume"} onPress={
+        isRunning ? pause : resume
+      } />
       <Text>{`Volley #: ${volley}`}</Text>
       </View>
       
