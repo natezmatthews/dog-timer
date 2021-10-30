@@ -4,14 +4,16 @@ export interface SettingsState {
   pb: string,
   numRounds: string,
   lowBound: string,
-  exponent: string
+  noise: string,
+  floor: string
 }
 
 const initialState: SettingsState = {
     pb: '60',
     numRounds: '20',
     lowBound: '.2',
-    exponent: '2'
+    noise: '2',
+    floor: '2'
 }
 
 export const settingsSlice = createSlice({
@@ -27,13 +29,16 @@ export const settingsSlice = createSlice({
     setLowBound(state, action: PayloadAction<string>) {
         state.lowBound = action.payload
     },
-    setExponent(state, action: PayloadAction<string>) {
-        state.exponent = action.payload
+    setNoise(state, action: PayloadAction<string>) {
+        state.noise = action.payload
+    },
+    setFloor(state, action: PayloadAction<string>) {
+        state.floor = action.payload
     },
   },
 })
 
 // Action creators are generated for each case reducer function
-export const { setExponent, setPb, setLowBound, setNumRounds } = settingsSlice.actions
+export const { setNoise, setPb, setLowBound, setNumRounds, setFloor } = settingsSlice.actions
 
 export default settingsSlice.reducer

@@ -5,7 +5,7 @@ import { Button, ScrollView, StyleSheet, Text, TextInput, View } from 'react-nat
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Provider, useDispatch, useSelector } from 'react-redux';
 import { RootState, store } from './redux/redux';
-import { setExponent, setLowBound, setNumRounds, setPb } from './redux/settingsSlice';
+import { setFloor, setLowBound, setNoise, setNumRounds, setPb } from './redux/settingsSlice';
 
 const Stack = createNativeStackNavigator();
 
@@ -26,7 +26,8 @@ function Settings({ navigation }) {
   const pb = useSelector((state: RootState) => state.settings.pb)
   const lowBound = useSelector((state: RootState) => state.settings.lowBound)
   const numRounds = useSelector((state: RootState) => state.settings.numRounds)
-  const exponent = useSelector((state: RootState) => state.settings.exponent)
+  const noise = useSelector((state: RootState) => state.settings.noise)
+  const floor = useSelector((state: RootState) => state.settings.floor)
   const dispatch = useDispatch();
 
   return (<SafeAreaView>
@@ -34,24 +35,34 @@ function Settings({ navigation }) {
         title="Go to Home"
         onPress={() => navigation.navigate('Home')}
       />
+    <Text>Personal best</Text>
     <TextInput
       value={pb}
       onChangeText={(newText) => dispatch(setPb((newText)))}
       style={styles.input}
     />
+    <Text>Num rounds</Text>
     <TextInput
       value={numRounds}
       onChangeText={(newText) => dispatch(setNumRounds(newText))}
       style={styles.input}
     />
+    <Text>Lows are x percent of highs</Text>
     <TextInput
       value={lowBound}
       onChangeText={(newText) => dispatch(setLowBound((newText)))}
       style={styles.input}
     />
+    <Text>Range of noise</Text>
     <TextInput
-      value={exponent}
-      onChangeText={(newText) => dispatch(setExponent((newText)))}
+      value={noise}
+      onChangeText={(newText) => dispatch(setNoise((newText)))}
+      style={styles.input}
+    />
+    <Text>Lowest floor</Text>
+    <TextInput
+      value={floor}
+      onChangeText={(newText) => dispatch(setFloor((newText)))}
       style={styles.input}
     />
   </SafeAreaView>)
@@ -61,7 +72,9 @@ function Home({ navigation }) {
   const pb = useSelector((state: RootState) => state.settings.pb)
   const lowBound = useSelector((state: RootState) => state.settings.lowBound)
   const numRounds = useSelector((state: RootState) => state.settings.numRounds)
-  const exponent = useSelector((state: RootState) => state.settings.exponent)
+  const noise = useSelector((state: RootState) => state.settings.noise)
+  const floor = useSelector((state: RootState) => state.settings.floor)
+  
   const [volley, setVolley] = useState<number>(0);
   const [plan, setPlan] = useState<number[]>([]);
   const [index, setIndex] = useState<number>(0);
@@ -70,7 +83,13 @@ function Home({ navigation }) {
 
   useEffect(() => {
     setPlan(() => {
-      const newPlan = simulator(parseInt(pb, 10), parseInt(numRounds, 10), parseFloat(exponent), parseFloat(lowBound));
+      const newPlan = simulator(
+        parseInt(pb, 10), 
+        parseInt(numRounds, 10), 
+        parseFloat(lowBound),
+        parseFloat(noise),
+        parseInt(floor, 10)
+      );
       setIndex(0)
       setSeconds(Math.ceil(newPlan[0]))
       return newPlan;
@@ -78,13 +97,14 @@ function Home({ navigation }) {
   }, [pb, numRounds, volley])
 
   useEffect(() => {
-    let myInterval = setInterval(() => {
+    let myTimeout = setTimeout(() => {
       if (seconds > 0) {
         setSeconds(seconds => seconds - 1)
       }
       if (seconds === 0) {
         if (index + 1 === plan.length) {
-          dispatch(setPb((parseInt(pb, 10) * 1.2).toString()))
+          dispatch(setPb((
+            parseInt(pb, 10) * 1.2).toString()))
           setVolley(volley => volley + 1)
         } else {
           setIndex(index => {
@@ -95,61 +115,52 @@ function Home({ navigation }) {
         }
       }
     }, 1000)
-    return () => clearInterval(myInterval)
+    return () => clearTimeout(myTimeout)
   }, [seconds]);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.column}>
-        <Button
-        title="Go to Settings"
-        onPress={() => navigation.navigate('Settings')}
-      />
-      <Text>{seconds}</Text>
-      <Button title={"Start"} onPress={() => setVolley(volley => volley + 1)} />
-      <TextInput 
-        keyboardType='numeric'
-        value={pb.toString()}
-        onChangeText={text => setPb(parseInt(text.replace(/[^0-9]/g, '')))}
-      />
-      {/* <Text>{`Personal Best: ${pb}`}</Text> */}
-      <Text>{`Num Rounds: ${numRounds}`}</Text>
-      <Text>{`Volley #: ${volley}`}</Text>
-      <Text>{`Seconds: ${seconds}`}</Text>
-      </View>
-      
-      <View style={styles.column}>
         {plan.map((tbr, i) =>
           <Text key={i}>{`${index === i ? '-> ' : ''}${Math.ceil(tbr)}`}</Text>
         )}
       </View>
+      
+      <View style={styles.column}>
+        <Button
+        title="Go to Settings"
+        onPress={() => navigation.navigate('Settings')}
+      />
+      <Text style={styles.countdown}>{seconds}</Text>
+      <Button title={"Start"} onPress={() => setVolley(volley => volley + 1)} />
+      <Text>{`Volley #: ${volley}`}</Text>
+      </View>
+      
+      
     </ScrollView>);
 }
 
-function simulator(personalBest: number, numRewardsPerVolley: number, exponent: number, lowBound: number): number[] {
-  const tbrs = [];
+function isOdd(num: number): boolean {
+  return (num % 2) === 1
+}
+
+function simulator(
+  personalBest: number,
+  numRewardsPerVolley: number,
+  lowBound: number,
+  noise: number,
+  floor: number,
+) {
+  const tbrs = []
   for (let index = 1; index <= numRewardsPerVolley; index++) {
     const percentThroughRound = index / numRewardsPerVolley;
     const percentOfPersonalBest = percentThroughRound * personalBest;
-    tbrs.push(
-      randomWithinBounds(percentOfPersonalBest * lowBound, percentOfPersonalBest, exponent - percentThroughRound)
-    )
+    const noiseLess = isOdd(index) ? percentOfPersonalBest : (percentOfPersonalBest * lowBound);
+    const noised = noiseLess + (Math.random() - 0.5) * noise;
+    const notBelow = noised > floor ? noised : floor;
+    tbrs.push(notBelow)
   }
-  tbrs.push(personalBest)
   return tbrs;
-}
-
-function randomWithinBounds(min: number, max: number, exponent: number): number {
-  return Math.pow(
-    randBetween(
-      Math.pow(min, 1 / exponent),
-      Math.pow(max, 1 / exponent)
-    ),
-    exponent);
-}
-
-function randBetween(min: number, max: number): number { // min and max included 
-  return Math.random() * (max - min) + min
 }
 
 const styles = StyleSheet.create({
@@ -159,6 +170,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
+    padding: 15
   },
   column: {
     width: '50%'
@@ -169,4 +181,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 10,
   },
+  countdown: {
+    fontSize: 30
+  }
 });
