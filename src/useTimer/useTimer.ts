@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Time, Validate } from './utils';
+import Time from './Time';
+import Validate from './Validate';
 
 function useInterval(callback, delay) {
   const callbacRef = useRef();

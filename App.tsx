@@ -6,7 +6,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Provider, useDispatch, useSelector } from 'react-redux';
 import { RootState, store } from './redux/redux';
 import { setFloor, setLowBound, setNoise, setNumRounds, setPb } from './redux/settingsSlice';
-import useTimer from './useTimer/useTimer';
+import makeAPlan from './src/makeAPlan';
+import nSecondsFromNow from './src/nSecondsFromNow';
+import useTimer from './src/useTimer/useTimer';
 
 const Stack = createNativeStackNavigator();
 
@@ -81,12 +83,6 @@ function Home({ navigation }) {
   const [index, setIndex] = useState<number>(0);
   const dispatch = useDispatch()
 
-  function nSecondsFromNow(n: number): Date {
-    const time = new Date();
-    time.setSeconds(time.getSeconds() + n);
-    return time;
-  }
-
   const {
     seconds,
     isRunning,
@@ -109,7 +105,7 @@ function Home({ navigation }) {
 
   useEffect(() => {
     setPlan(() => {
-      const newPlan = simulator(
+      const newPlan = makeAPlan(
         parseInt(pb, 10), 
         parseInt(numRounds, 10), 
         parseFloat(lowBound),
@@ -144,29 +140,6 @@ function Home({ navigation }) {
       
       
     </ScrollView>);
-}
-
-function isOdd(num: number): boolean {
-  return (num % 2) === 1
-}
-
-function simulator(
-  personalBest: number,
-  numRewardsPerVolley: number,
-  lowBound: number,
-  noise: number,
-  floor: number,
-) {
-  const tbrs = []
-  for (let index = 1; index <= numRewardsPerVolley; index++) {
-    const percentThroughRound = index / numRewardsPerVolley;
-    const percentOfPersonalBest = percentThroughRound * personalBest;
-    const noiseLess = isOdd(index) ? percentOfPersonalBest : (percentOfPersonalBest * lowBound);
-    const noised = noiseLess + (Math.random() - 0.5) * noise;
-    const notBelow = noised > floor ? noised : floor;
-    tbrs.push(notBelow)
-  }
-  return tbrs;
 }
 
 const styles = StyleSheet.create({
