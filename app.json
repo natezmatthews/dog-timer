@@ -1,7 +1,7 @@
 {
     "expo": {
      "name": "Dog Timer",
-     "icon": "./path/to/your/app-icon.png",
+     "icon": "./Icon-512.png",
      "version": "1.0.0",
      "slug": "dog-timer",
      "ios": {
