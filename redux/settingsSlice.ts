@@ -1,44 +1,29 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 
 export interface SettingsState {
-  pb: string,
-  numRounds: string,
-  lowBound: string,
-  noise: string,
-  floor: string
+  start: string,
+  delta: string
 }
 
 const initialState: SettingsState = {
-    pb: '60',
-    numRounds: '20',
-    lowBound: '.2',
-    noise: '2',
-    floor: '2'
+    start: '1',
+    delta: '1'
 }
 
 export const settingsSlice = createSlice({
   name: 'settings',
   initialState,
   reducers: {
-    setPb(state, action: PayloadAction<string>) {
-        state.pb = action.payload
+    setStart(state, action: PayloadAction<string>) {
+        state.start = action.payload
     },
-    setNumRounds(state, action: PayloadAction<string>) {
-        state.numRounds = action.payload
-    },
-    setLowBound(state, action: PayloadAction<string>) {
-        state.lowBound = action.payload
-    },
-    setNoise(state, action: PayloadAction<string>) {
-        state.noise = action.payload
-    },
-    setFloor(state, action: PayloadAction<string>) {
-        state.floor = action.payload
+    setDelta(state, action: PayloadAction<string>) {
+        state.delta = action.payload
     },
   },
 })
 
 // Action creators are generated for each case reducer function
-export const { setNoise, setPb, setLowBound, setNumRounds, setFloor } = settingsSlice.actions
+export const { setStart, setDelta } = settingsSlice.actions
 
 export default settingsSlice.reducer
